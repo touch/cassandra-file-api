@@ -15,6 +15,8 @@
             [taoensso.timbre :as timbre :refer (info)]))
 
 
+;;; Fixture functions.
+
 (def cluster (delay (alia/cluster "localhost" :port 9042)))
 
 
@@ -28,29 +30,41 @@
     (cr/write-schema cluster)))
 
 
-(defn cassandra-and-netty
+(defn cassandra-fixture
+  [f]
+  (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")] #(cc/stop-cassandra %)
+    (while (not (cc/running? cassandra))
+      (info "Waiting for Cassandra daemon to be fully started...")
+      (Thread/sleep 500))
+    (info "Cassandra daemon fully started.")
+    (prepare-cassandra @cluster)
+    (reset! cr/consistency :one)
+    (try
+      (f)
+      (finally
+        (alia/shutdown @cluster)))))
+
+
+(defn netty-fixture
+  [f]
+  (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] #(cn/stop-netty %)
+    (f)))
+
+
+(defn loglevel-fixture
   [f]
   (let [log-level-before (:current-level @timbre/config)]
     (timbre/set-level! :info)
     (try
-      (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")] #(cc/stop-cassandra %)
-        (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] #(cn/stop-netty %)
-          (while (not (cc/running? cassandra))
-            (info "Waiting for Cassandra daemon to be fully started...")
-            (Thread/sleep 500))
-          (info "Cassandra daemon fully started.")
-          (prepare-cassandra @cluster)
-          (reset! cr/consistency :one)
-          (try
-            (f)
-            (finally
-              (alia/shutdown @cluster)))))
+      (f)
       (finally
         (timbre/set-level! log-level-before)))))
 
 
-(use-fixtures :once cassandra-and-netty)
+(use-fixtures :once loglevel-fixture netty-fixture cassandra-fixture)
 
+
+;;; Test functions.
 
 (deftest retrieve-test
   (fact "a file can be retrieved"
