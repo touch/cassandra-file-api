@@ -41,9 +41,11 @@
           (info "Cassandra daemon fully started.")
           (prepare-cassandra @cluster)
           (reset! cr/consistency :one)
-          (f)))
+          (try
+            (f)
+            (finally
+              (alia/shutdown @cluster)))))
       (finally
-        (alia/shutdown @cluster)
         (timbre/set-level! log-level-before)))))
 
 
