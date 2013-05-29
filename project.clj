@@ -6,9 +6,10 @@
   :description "A REST interface to retrieve files from our Cassandra repository."
   :url "https://github.com/containium/cassandra-file-api"
   :dependencies [[org.clojure/clojure "1.4.0"]
-                 [boxure/shared_2.9.2 "0.1-SNAPSHOT"]
                  [org.apache.cassandra/cassandra-all "1.2.3"]
-                 [io.netty/netty "3.5.9.Final"] ; Remove this when Cassandra pom gets its dependencies right.
+                 [io.netty/netty "3.5.9.Final"]  ; Remove this when Cassandra pom gets its dependencies right.
+                 [commons-codec "1.5"] ; Necessary, as Cassandra wants 1.3, but Shared uses 1.5.
                  [midje "1.5.1"]
-                 [com.taoensso/timbre "0.8.1"]]
-  :main cassandra-file-api.core) ; Version 1.6 is available, update all?
+                 [com.taoensso/timbre "0.8.1"]]  ; Version 1.6 is available, update all?
+  :profiles {:dev {:dependencies [[boxure/shared_2.9.2 "0.1-SNAPSHOT"]]}}
+  :main cassandra-file-api.core)

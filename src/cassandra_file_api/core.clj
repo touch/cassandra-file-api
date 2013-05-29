@@ -20,9 +20,9 @@
 ;;; Cassandra related.
 
 (defn- retrieve-data
-  "Retrieve the file for the specified hash data using the internal API
-  of Cassandra. It returns a ByteBuffer to the file data, or nil if
-  the file could not be found.
+  "Retrieve the file for the specified hash using the internal API of
+  Cassandra. It returns a ByteBuffer to the file data, or nil if the
+  file could not be found.
 
   This internal use of the API is based on
   https://github.com/apache/cassandra/blob/trunk/examples/client_only/src/ClientOnlyExample.java
@@ -30,7 +30,7 @@
   We will have to see how this works out, or whether this is better:
   https://svn.apache.org/repos/asf/cassandra/trunk/examples/client_only/src/ClientOnlyExample.java"
   [hash]
-  (let [data (QueryProcessor/process (str "SELECT data FROM fs.files WHERE hash ='" hash "'")
+  (let [data (QueryProcessor/process (str "SELECT data FROM fs.files WHERE hash ='" hash "';")
                                      ConsistencyLevel/ONE)]
     (when-not (.isEmpty data)
       (.. data one (getBytes "data")))))
@@ -41,7 +41,7 @@
 (defn- handle-code
   "Respond only with a status code."
   [^Channel channel ^HttpResponseStatus code]
-  (info "Responding with bare code:" code)
+  (debug "Responding with bare code:" code)
   (let [response (DefaultHttpResponse. HttpVersion/HTTP_1_1 code)
         future (.write channel response)]
     (.addListener future ChannelFutureListener/CLOSE)))
@@ -52,13 +52,14 @@
   [^HttpRequest request ^Channel channel]
   (let [hash (subs (.getUri request) 1)
         modified-since (.getHeader request HttpHeaders$Names/IF_MODIFIED_SINCE)]
-    (info "Got file request for hash:" hash)
+    (debug "Got file request for hash:" hash)
     (if (and modified-since (seq modified-since))
       ;; A file is never modified. Keep an eye on this though, as it may not play
       ;; nice with caches and removed files.
       (handle-code channel HttpResponseStatus/NOT_MODIFIED)
       (if-let [bytebuffer (retrieve-data hash)]
         (do
+          (debug "Responding with code 200 and file data.")
           (.write channel (DefaultHttpResponse. HttpVersion/HTTP_1_1 HttpResponseStatus/OK))
           (let [future (.write channel (ChannelBuffers/wrappedBuffer bytebuffer))]
             (.addListener future ChannelFutureListener/CLOSE)))

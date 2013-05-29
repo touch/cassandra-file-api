@@ -31,3 +31,11 @@
   (info "Stopping embedded Cassandra instance.")
   (.deactivate daemon)
   (.interrupt thread))
+
+
+(defn running?
+  "Returns whether the supplied server is running and ready to receive
+  connections."
+  [{:keys [daemon] :as server}]
+  (when-let [s (.nativeServer daemon)]
+    (.isRunning s)))

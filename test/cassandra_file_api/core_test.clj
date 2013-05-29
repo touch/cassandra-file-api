@@ -4,8 +4,55 @@
 
 (ns cassandra-file-api.core-test
   (:require [clojure.test :refer :all]
-            [cassandra-file-api.core :refer :all]))
+            [clojure.java.io :refer (copy)]
+            [midje.sweet :refer :all]
+            [cassandra-file-api.core :refer :all]
+            [cassandra-file-api.cassandra :as cc]
+            [cassandra-file-api.netty :as cn]
+            [prime.types.cassandra-repository :as cr]
+            [prime.utils :refer (with-resource)]
+            [qbits.alia :as alia]
+            [taoensso.timbre :as timbre :refer (info)]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+
+(def cluster (delay (alia/cluster "localhost" :port 9042)))
+
+
+(defn- prepare-cassandra
+  "Write the schema to the database."
+  [cluster]
+  (alia/with-session (alia/connect cluster)
+    (try
+      (alia/execute "DROP KEYSPACE fs;")
+      (catch Exception ex))
+    (cr/write-schema cluster)))
+
+
+(defn cassandra-and-netty
+  [f]
+  (let [log-level-before (:current-level @timbre/config)]
+    (timbre/set-level! :info)
+    (try
+      (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")] #(cc/stop-cassandra %)
+        (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] #(cn/stop-netty %)
+          (while (not (cc/running? cassandra))
+            (info "Waiting for Cassandra daemon to be fully started...")
+            (Thread/sleep 500))
+          (info "Cassandra daemon fully started.")
+          (prepare-cassandra @cluster)
+          (reset! cr/consistency :one)
+          (f)))
+      (finally
+        (alia/shutdown @cluster)
+        (timbre/set-level! log-level-before)))))
+
+
+(use-fixtures :once cassandra-and-netty)
+
+
+(deftest retrieve-test
+  (fact "a file can be retrieved"
+
+        (let [repo (cr/cassandra-repository @cluster "not-used-atm")]
+          (cr/store repo #(copy "hi there!" %))
+          (slurp "http://localhost:8080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!")))
