@@ -68,7 +68,6 @@
 
 (deftest retrieve-test
   (fact "a file can be retrieved"
-
-        (let [repo (cr/cassandra-repository @cluster "not-used-atm")]
-          (cr/store repo #(copy "hi there!" %))
-          (slurp "http://localhost:8080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!")))
+    (let [repo (cr/cassandra-repository @cluster "not-used-atm")]
+      (cr/store repo #(copy "hi there!" %))
+      (slurp "http://localhost:8080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!")))
