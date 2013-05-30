@@ -32,7 +32,7 @@
 
 (defn cassandra-fixture
   [f]
-  (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")] #(cc/stop-cassandra %)
+  (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")] cc/stop-cassandra
     (while (not (cc/running? cassandra))
       (info "Waiting for Cassandra daemon to be fully started...")
       (Thread/sleep 500))
@@ -47,7 +47,7 @@
 
 (defn netty-fixture
   [f]
-  (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] #(cn/stop-netty %)
+  (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] cn/stop-netty
     (f)))
 
 
