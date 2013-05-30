@@ -13,8 +13,8 @@
                  [com.taoensso/timbre "0.8.1"]]  ; Version 1.6 is available, update all?
   :profiles {:dev {:plugins [[lein-immutant "1.0.0.beta1"]]
                    :immutant {:cassandra-config-file-path "cassandra.yaml"
-                              :netty-port 8080
+                              :netty-port 8090
                               :nrepl-port 4343}}
              :prod {:immutant {:cassandra-config-file-path "/etc/immutant/cassandra.yaml"
-                               :netty-port 8080}}}
+                               :netty-port 8090}}}
   :main cassandra-file-api.core)
