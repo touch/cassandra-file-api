@@ -47,7 +47,7 @@
 
 (defn netty-fixture
   [f]
-  (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] cn/stop-netty
+  (with-resource [_ (cn/start-netty 58080 (cn/make-handler handler-fn))] cn/stop-netty
     (f)))
 
 
@@ -70,4 +70,4 @@
   (fact "a file can be retrieved"
     (let [repo (cr/cassandra-repository @cluster "not-used-atm")]
       (cr/store repo #(copy "hi there!" %))
-      (slurp "http://localhost:8080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!")))
+      (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!")))
