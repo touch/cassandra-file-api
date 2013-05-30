@@ -4,7 +4,8 @@
 
 (ns cassandra-file-api.core
   "The core functionality, glueing the other namespaces together."
-  (:use [taoensso.timbre :as timbre :only (trace debug info warn error fatal spy)])
+  (:use [taoensso.timbre :as timbre :only (trace debug info warn error fatal spy)]
+        [prime.utils :only (with-resource)])
   (:require [cassandra-file-api.netty :as cn]
             [cassandra-file-api.cassandra :as cc])
   (:import [org.jboss.netty.channel ChannelHandlerContext MessageEvent Channel
@@ -81,11 +82,8 @@
 (defn -main
   "A main method for testing."
   [& args]
-  (let [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")
-        handler (cn/make-handler handler-fn)
-        netty (cn/start-netty 8080 handler)]
-    (Thread/sleep 5000)
-    (println "Press ENTER to stop.")
-    (read-line)
-    (cn/stop-netty netty)
-    (cc/stop-cassandra cassandra)))
+  (with-resource [_ (cc/start-cassandra "file:dev-resources/cassandra.yaml")] cc/stop-cassandra
+    (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] cn/stop-netty
+      (Thread/sleep 5000)
+      (println "Press ENTER to stop.")
+      (read-line))))
