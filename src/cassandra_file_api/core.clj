@@ -14,7 +14,9 @@
             HttpVersion HttpResponseStatus HttpHeaders$Names]
            [org.jboss.netty.buffer ChannelBuffers]
            [org.apache.cassandra.cql3 QueryProcessor]
-           [org.apache.cassandra.db ConsistencyLevel])
+           [org.apache.cassandra.db ConsistencyLevel]
+           [java.text SimpleDateFormat]
+           [java.util Calendar])
   (:gen-class))
 
 
@@ -48,6 +50,8 @@
     (.addListener future ChannelFutureListener/CLOSE)))
 
 
+(def rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz"))
+
 (defn- handle-file-request
   "Handle a file request."
   [^HttpRequest request ^Channel channel]
@@ -59,9 +63,12 @@
       ;; nice with caches and removed files.
       (handle-code channel HttpResponseStatus/NOT_MODIFIED)
       (if-let [bytebuffer (retrieve-data hash)]
-        (do
-          (debug "Responding with code 200 and file data.")
-          (.write channel (DefaultHttpResponse. HttpVersion/HTTP_1_1 HttpResponseStatus/OK))
+        (let [response (DefaultHttpResponse. HttpVersion/HTTP_1_1 HttpResponseStatus/OK)
+              expires-str (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance)
+                                                                 (.add Calendar/YEAR 1))))]
+          (debug "Responding with code 200, expires header (at" expires-str ") and file data.")
+          (.setHeader response HttpHeaders$Names/EXPIRES expires-str)
+          (.write channel response)
           (let [future (.write channel (ChannelBuffers/wrappedBuffer bytebuffer))]
             (.addListener future ChannelFutureListener/CLOSE)))
         (handle-code channel HttpResponseStatus/NOT_FOUND)))))
@@ -84,6 +91,7 @@
   [& args]
   (with-resource [_ (cc/start-cassandra "file:dev-resources/cassandra.yaml")] cc/stop-cassandra
     (with-resource [_ (cn/start-netty 8080 (cn/make-handler handler-fn))] cn/stop-netty
+      (timbre/set-level! :debug)
       (Thread/sleep 5000)
       (println "Press ENTER to stop.")
       (read-line))))
