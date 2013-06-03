@@ -50,7 +50,10 @@
     (.addListener future ChannelFutureListener/CLOSE)))
 
 
-(def rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz"))
+(def expires-str
+  (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")]
+    (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance) (.add Calendar/YEAR 1))))))
+
 
 (defn- handle-file-request
   "Handle a file request."
@@ -63,12 +66,10 @@
       ;; nice with caches and removed files.
       (handle-code channel HttpResponseStatus/NOT_MODIFIED)
       (if-let [bytebuffer (retrieve-data hash)]
-        (let [response (DefaultHttpResponse. HttpVersion/HTTP_1_1 HttpResponseStatus/OK)
-              expires-str (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance)
-                                                                 (.add Calendar/YEAR 1))))]
+        (do
           (debug "Responding with code 200, expires header (at" expires-str ") and file data.")
-          (.setHeader response HttpHeaders$Names/EXPIRES expires-str)
-          (.write channel response)
+          (.write channel (doto (DefaultHttpResponse. HttpVersion/HTTP_1_1 HttpResponseStatus/OK)
+                            (.setHeader HttpHeaders$Names/EXPIRES expires-str)))
           (let [future (.write channel (ChannelBuffers/wrappedBuffer bytebuffer))]
             (.addListener future ChannelFutureListener/CLOSE)))
         (handle-code channel HttpResponseStatus/NOT_FOUND)))))
