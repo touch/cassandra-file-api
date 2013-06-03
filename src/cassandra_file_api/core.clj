@@ -43,14 +43,14 @@
 
 ;; Create default responses only once during startup. Don't mutate these
 ;; objects, as they are reused for every request
-(defmacro def-response
+(defmacro defresponse
   [name ^HttpResponseStatus code]
   `(def ~name (DefaultHttpResponse. HttpVersion/HTTP_1_1 ~code)))
 
-(def-response response-ok HttpResponseStatus/OK)
-(def-response response-not-modified HttpResponseStatus/NOT_MODIFIED)
-(def-response response-not-found HttpResponseStatus/NOT_FOUND)
-(def-response response-method-not-allowed HttpResponseStatus/METHOD_NOT_ALLOWED)
+(defresponse response-ok HttpResponseStatus/OK)
+(defresponse response-not-modified HttpResponseStatus/NOT_MODIFIED)
+(defresponse response-not-found HttpResponseStatus/NOT_FOUND)
+(defresponse response-method-not-allowed HttpResponseStatus/METHOD_NOT_ALLOWED)
 
 ;; Set the expires header for the OK response.
 (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")
