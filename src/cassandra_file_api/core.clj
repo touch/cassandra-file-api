@@ -11,7 +11,7 @@
   (:import [org.jboss.netty.channel ChannelHandlerContext MessageEvent Channel
             ChannelFutureListener]
            [org.jboss.netty.handler.codec.http HttpRequest HttpMethod DefaultHttpResponse
-            HttpVersion HttpResponseStatus HttpHeaders$Names]
+            HttpVersion HttpResponseStatus HttpHeaders$Names HttpResponse]
            [org.jboss.netty.buffer ChannelBuffers]
            [org.apache.cassandra.cql3 QueryProcessor]
            [org.apache.cassandra.db ConsistencyLevel]
@@ -41,18 +41,28 @@
 
 ;;; Netty related.
 
-(defn- handle-code
+;; Create default responses only once during startup. Don't mutate these
+;; objects, as they are reused for every request
+(defmacro def-response
+  [name ^HttpResponseStatus code]
+  `(def ~name (DefaultHttpResponse. HttpVersion/HTTP_1_1 ~code)))
+
+(def-response response-ok HttpResponseStatus/OK)
+(def-response response-not-modified HttpResponseStatus/NOT_MODIFIED)
+(def-response response-not-found HttpResponseStatus/NOT_FOUND)
+(def-response response-method-not-allowed HttpResponseStatus/METHOD_NOT_ALLOWED)
+
+;; Set the expires header for the OK response.
+(let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")
+      expires-str (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance) (.add Calendar/YEAR 1))))]
+  (.setHeader response-ok HttpHeaders$Names/EXPIRES expires-str))
+
+
+(defn- do-bare-response
   "Respond only with a status code."
-  [^Channel channel ^HttpResponseStatus code]
-  (debug "Responding with bare code:" code)
-  (let [response (DefaultHttpResponse. HttpVersion/HTTP_1_1 code)
-        future (.write channel response)]
-    (.addListener future ChannelFutureListener/CLOSE)))
-
-
-(def expires-str
-  (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")]
-    (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance) (.add Calendar/YEAR 1))))))
+  [^Channel channel ^HttpResponse response]
+  (debug "Responding with bare code:" (.. response getStatus getCode))
+  (.addListener (.write channel response) ChannelFutureListener/CLOSE))
 
 
 (defn- handle-file-request
@@ -64,15 +74,14 @@
     (if (and modified-since (seq modified-since))
       ;; A file is never modified. Keep an eye on this though, as it may not play
       ;; nice with caches and removed files.
-      (handle-code channel HttpResponseStatus/NOT_MODIFIED)
+      (do-bare-response channel response-not-modified)
       (if-let [bytebuffer (retrieve-data hash)]
         (do
-          (debug "Responding with code 200, expires header (at" expires-str ") and file data.")
-          (.write channel (doto (DefaultHttpResponse. HttpVersion/HTTP_1_1 HttpResponseStatus/OK)
-                            (.setHeader HttpHeaders$Names/EXPIRES expires-str)))
+          (debug "Responding with code 200, expires header and file data.")
+          (.write channel response-ok)
           (let [future (.write channel (ChannelBuffers/wrappedBuffer bytebuffer))]
             (.addListener future ChannelFutureListener/CLOSE)))
-        (handle-code channel HttpResponseStatus/NOT_FOUND)))))
+        (do-bare-response channel response-not-found)))))
 
 
 (defn handler-fn
@@ -82,7 +91,7 @@
         ^Channel channel (.getChannel e)]
     (if (= (.getMethod request) HttpMethod/GET)
       (handle-file-request request channel)
-      (handle-code channel HttpResponseStatus/METHOD_NOT_ALLOWED))))
+      (do-bare-response channel response-method-not-allowed))))
 
 
 ;;; Testing functions.
