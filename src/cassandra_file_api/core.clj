@@ -4,10 +4,11 @@
 
 (ns cassandra-file-api.core
   "The core functionality, glueing the other namespaces together."
-  (:use [taoensso.timbre :as timbre :only (trace debug info warn error fatal spy)]
-        [prime.utils :only (with-resource)])
   (:require [cassandra-file-api.netty :as cn]
-            [cassandra-file-api.cassandra :as cc])
+            [cassandra-file-api.cassandra :as cc]
+            [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)]
+            [prime.utils :refer (with-resource guard-let)]
+            [clojure.string :refer (blank?)])
   (:import [org.jboss.netty.channel ChannelHandlerContext MessageEvent Channel
             ChannelFutureListener]
            [org.jboss.netty.handler.codec.http HttpRequest HttpMethod DefaultHttpResponse
@@ -51,6 +52,7 @@
 (defresponse response-not-modified HttpResponseStatus/NOT_MODIFIED)
 (defresponse response-not-found HttpResponseStatus/NOT_FOUND)
 (defresponse response-method-not-allowed HttpResponseStatus/METHOD_NOT_ALLOWED)
+(defresponse response-bad-request HttpResponseStatus/BAD_REQUEST)
 
 ;; Set the expires header for the OK response.
 (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")
@@ -68,20 +70,18 @@
 (defn- handle-file-request
   "Handle a file request."
   [^HttpRequest request ^Channel channel]
-  (let [hash (subs (.getUri request) 1)
-        modified-since (.getHeader request HttpHeaders$Names/IF_MODIFIED_SINCE)]
-    (debug "Got file request for hash:" hash)
-    (if (and modified-since (seq modified-since))
-      ;; A file is never modified. Keep an eye on this though, as it may not play
-      ;; nice with caches and removed files.
-      (do-bare-response channel response-not-modified)
+  (debug "Got request:" request)
+  (if (seq (.getHeader request HttpHeaders$Names/IF_MODIFIED_SINCE))
+    (do-bare-response channel response-not-modified)
+    (guard-let [hash (subs (.getUri request) 1) :when-not blank?]
       (if-let [bytebuffer (retrieve-data hash)]
         (do
           (debug "Responding with code 200, expires header and file data.")
           (.write channel response-ok)
           (let [future (.write channel (ChannelBuffers/wrappedBuffer bytebuffer))]
             (.addListener future ChannelFutureListener/CLOSE)))
-        (do-bare-response channel response-not-found)))))
+        (do-bare-response channel response-not-found))
+      (do-bare-response channel response-bad-request))))
 
 
 (defn handler-fn
