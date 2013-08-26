@@ -14,14 +14,30 @@
            [org.jboss.netty.handler.codec.http HttpRequest HttpMethod DefaultHttpResponse
             HttpVersion HttpResponseStatus HttpHeaders$Names HttpResponse]
            [org.jboss.netty.buffer ChannelBuffers]
-           [org.apache.cassandra.cql3 QueryProcessor]
+           [org.apache.cassandra.cql3 QueryProcessor UntypedResultSet]
            [org.apache.cassandra.db ConsistencyLevel]
+           [org.apache.cassandra.service ClientState QueryState]
            [java.text SimpleDateFormat]
-           [java.util Calendar])
+           [java.util Calendar]
+           [java.nio CharBuffer]
+           [java.nio.charset Charset])
   (:gen-class))
 
 
 ;;; Cassandra related.
+
+(def prepared-query
+  (delay (let [query "SELECT data FROM fs.files WHERE hash = ?;"
+               prep-result (QueryProcessor/prepare query (ClientState. true) false)]
+           (QueryProcessor/getPrepared (.statementId prep-result)))))
+
+
+(defn- string->bytebuffer
+  "Wrap a String in a ByteBuffer."
+  [s]
+  (let [encoder (.newEncoder (Charset/forName "UTF-8"))]
+    (.encode encoder (CharBuffer/wrap s))))
+
 
 (defn- retrieve-data
   "Retrieve the file for the specified hash using the internal API of
@@ -34,8 +50,11 @@
   We will have to see how this works out, or whether this is better:
   https://svn.apache.org/repos/asf/cassandra/trunk/examples/client_only/src/ClientOnlyExample.java"
   [hash]
-  (let [data (QueryProcessor/process (str "SELECT data FROM fs.files WHERE hash ='" hash "';")
-                                     ConsistencyLevel/ONE)]
+  (let [msg (QueryProcessor/processPrepared (deref prepared-query)
+                                             ConsistencyLevel/ONE
+                                             (QueryState. (ClientState. true))
+                                             (list (string->bytebuffer hash)))
+        data (UntypedResultSet. (.result msg))]
     (when-not (.isEmpty data)
       (.. data one (getBytes "data")))))
 
