@@ -7,10 +7,10 @@
   :url "https://github.com/containium/cassandra-file-api"
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [boxure/shared_2.9.2 "0.1-SNAPSHOT"]
-                 [org.apache.cassandra/cassandra-all "1.2.8"]
-                 [midje "1.5.1"]
-                 [com.taoensso/timbre "2.6.1"]
-                 [http-kit "2.1.10"]]
+                 [com.taoensso/timbre "2.6.1"]]
+  :profiles {:provided {:dependencies [[org.apache.cassandra/cassandra-all "1.2.8"]]}
+             :dev {:dependencies [[midje "1.5.1"]
+                                  [http-kit "2.1.10"]]}}
   :containium {:start cassandra-file-api.core/start
               :stop cassandra-file-api.core/stop
               :ring {:handler-sym cassandra-file-api.core/app
