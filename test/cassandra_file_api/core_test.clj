@@ -8,11 +8,11 @@
             [midje.sweet :refer :all]
             [cassandra-file-api.core :refer :all]
             [cassandra-file-api.cassandra :as cc]
-            [cassandra-file-api.netty :as cn]
             [prime.types.cassandra-repository :as cr]
             [prime.utils :refer (with-resource)]
             [qbits.alia :as alia]
-            [taoensso.timbre :as timbre :refer (info)]))
+            [taoensso.timbre :as timbre :refer (info)]
+            [org.httpkit.server :refer (run-server)]))
 
 
 ;;; Fixture functions.
@@ -32,7 +32,8 @@
 
 (defn cassandra-fixture
   [f]
-  (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")] cc/stop-cassandra
+  (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")]
+    cc/stop-cassandra
     (while (not (cc/running? cassandra))
       (info "Waiting for Cassandra daemon to be fully started...")
       (Thread/sleep 500))
@@ -45,10 +46,13 @@
         (alia/shutdown @cluster)))))
 
 
-(defn netty-fixture
+(defn http-kit-fixture
   [f]
-  (with-resource [_ (cn/start-netty 58080 (cn/make-handler handler-fn))] cn/stop-netty
-    (f)))
+  (let [stop-fn (run-server #'app {:port 58080})]
+    (try
+      (f)
+      (finally
+        (stop-fn)))))
 
 
 (defn loglevel-fixture
@@ -61,7 +65,7 @@
         (timbre/set-level! log-level-before)))))
 
 
-(use-fixtures :once loglevel-fixture netty-fixture cassandra-fixture)
+(use-fixtures :once loglevel-fixture http-kit-fixture cassandra-fixture)
 
 
 ;;; Test functions.
