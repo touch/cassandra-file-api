@@ -18,9 +18,11 @@
 
 ;;; Cassandra related.
 
+(def client-state (ClientState. true))
+(def query-state (QueryState. client-state))
 (def prepared-query
   (delay (let [query "SELECT data FROM fs.files WHERE hash = ?;"
-               prep-result (QueryProcessor/prepare query (ClientState. true) false)]
+               prep-result (QueryProcessor/prepare query client-state false)]
            (QueryProcessor/getPrepared (.statementId prep-result)))))
 
 
@@ -43,12 +45,12 @@
   https://svn.apache.org/repos/asf/cassandra/trunk/examples/client_only/src/ClientOnlyExample.java"
   [hash]
   (let [msg (QueryProcessor/processPrepared (deref prepared-query)
-                                             ConsistencyLevel/ONE
-                                             (QueryState. (ClientState. true))
-                                             (list (string->bytebuffer hash)))
+                                            ConsistencyLevel/ONE
+                                            query-state
+                                            (list (string->bytebuffer hash)))
         data (UntypedResultSet. (.result msg))]
     (when-not (.isEmpty data)
-      (.. data one (getBytes "data")))))
+      (.. data one (getBytes "data") slice))))
 
 
 ;;; Ring related.
