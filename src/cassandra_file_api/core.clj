@@ -83,7 +83,7 @@
 ;;; Containium related.
 
 (defn start
-  [config]
+  [config systems]
   (info "Cassandra File API started."))
 
 

@@ -13,5 +13,5 @@
                                   [http-kit "2.1.10"]]}}
   :containium {:start cassandra-file-api.core/start
               :stop cassandra-file-api.core/stop
-              :ring {:handler-sym cassandra-file-api.core/app
+              :ring {:handler cassandra-file-api.core/app
                      :context-path "/files"}})
