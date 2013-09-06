@@ -6,10 +6,9 @@
   "The core functionality, glueing the other namespaces together."
   (:require [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)]
             [prime.utils :refer (guard-let)]
-            [clojure.string :refer (blank?)])
-  (:import [org.apache.cassandra.cql3 QueryProcessor UntypedResultSet]
-           [org.apache.cassandra.db ConsistencyLevel]
-           [org.apache.cassandra.service ClientState QueryState]
+            [clojure.string :refer (blank?)]
+            [publizr.cassandra-util :refer (prepare do-prepared)])
+  (:import [org.apache.cassandra.cql3 UntypedResultSet]
            [java.text SimpleDateFormat]
            [java.util Calendar]
            [java.nio CharBuffer]
@@ -18,37 +17,12 @@
 
 ;;; Cassandra related.
 
-(def client-state (ClientState. true))
-(def query-state (QueryState. client-state))
-(def prepared-query
-  (delay (let [query "SELECT data FROM fs.files WHERE hash = ?;"
-               prep-result (QueryProcessor/prepare query client-state false)]
-           (QueryProcessor/getPrepared (.statementId prep-result)))))
-
-
-(defn- string->bytebuffer
-  "Wrap a String in a ByteBuffer."
-  [s]
-  (let [encoder (.newEncoder (Charset/forName "UTF-8"))]
-    (.encode encoder (CharBuffer/wrap s))))
+(def retrieve-query (delay (prepare "SELECT data FROM fs.files WHERE hash = ?;")))
 
 
 (defn- retrieve-data
-  "Retrieve the file for the specified hash using the internal API of
-  Cassandra. It returns a ByteBuffer to the file data, or nil if the
-  file could not be found.
-
-  This internal use of the API is based on
-  https://github.com/apache/cassandra/blob/trunk/examples/client_only/src/ClientOnlyExample.java
-
-  We will have to see how this works out, or whether this is better:
-  https://svn.apache.org/repos/asf/cassandra/trunk/examples/client_only/src/ClientOnlyExample.java"
   [hash]
-  (let [msg (QueryProcessor/processPrepared (deref prepared-query)
-                                            ConsistencyLevel/ONE
-                                            query-state
-                                            (list (string->bytebuffer hash)))
-        data (UntypedResultSet. (.result msg))]
+  (let [^UntypedResultSet data (do-prepared (deref retrieve-query) :one hash)]
     (when-not (.isEmpty data)
       (.. data one (getBytes "data") slice))))
 
