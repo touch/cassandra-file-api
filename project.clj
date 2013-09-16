@@ -9,8 +9,9 @@
                  [boxure/shared_2.9.2 "0.1-SNAPSHOT"]
                  [com.taoensso/timbre "2.6.1"]]
   :profiles {:provided {:dependencies [[containium/containium "0.1.0-SNAPSHOT"]]}
-             :dev {:dependencies [[midje "1.5.1"]
-                                  [http-kit "2.1.10"]]}}
+             :dev {:dependencies [[leiningen-core "2.2.0"]
+                                  [org.apache.httpcomponents/httpclient "4.2.3"]
+                                  [midje "1.5.1"]]}}
   :containium {:start cassandra-file-api.core/start
               :stop cassandra-file-api.core/stop
               :ring {:handler cassandra-file-api.core/app

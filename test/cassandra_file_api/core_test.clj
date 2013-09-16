@@ -9,10 +9,10 @@
             [midje.sweet :refer :all]
             [containium.systems :refer (with-systems)]
             [containium.systems.config :refer (map-config)]
+            [containium.systems.ring :refer (test-http-kit)]
             [containium.systems.cassandra :refer (embedded12)]
             [prime.types.cassandra-repository :as cr]
             [qbits.alia :as alia]
-            [org.httpkit.server :refer (run-server)]
             [prime.utils :refer (with-resource)]
             [taoensso.timbre :as timbre :refer (info)]))
 
@@ -42,18 +42,11 @@
         (timbre/set-level! log-level-before)))))
 
 
-(defn http-kit-fixture
-  [f]
-  (let [stop-fn (run-server #'app {:port 58080})]
-    (try
-      (f)
-      (finally
-        (stop-fn)))))
-
-
 (defn systems-fixture
   [f]
-  (with-systems systems [:config (map-config {:cassandra {:config-file "cassandra.yaml"}})
+  (with-systems systems [:config (map-config {:cassandra {:config-file "cassandra.yaml"}
+                                              :http-kit {:port 58080}})
+                         :ring (test-http-kit #'app)
                          :cassandra embedded12]
     (prepare-cassandra @cluster)
     (reset! cr/consistency :one)
@@ -64,7 +57,7 @@
         (alia/shutdown @cluster)))))
 
 
-(use-fixtures :once loglevel-fixture http-kit-fixture systems-fixture)
+(use-fixtures :once loglevel-fixture systems-fixture)
 
 
 ;;; Test functions.
