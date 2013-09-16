@@ -3,16 +3,18 @@
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 (ns cassandra-file-api.core-test
-  (:require [clojure.test :refer :all]
+  (:require [cassandra-file-api.core :refer :all]
+            [clojure.test :refer :all]
             [clojure.java.io :refer (copy)]
             [midje.sweet :refer :all]
-            [cassandra-file-api.core :refer :all]
-            [cassandra-file-api.cassandra :as cc]
+            [containium.systems :refer (with-systems)]
+            [containium.systems.config :refer (map-config)]
+            [containium.systems.cassandra :refer (embedded12)]
             [prime.types.cassandra-repository :as cr]
-            [prime.utils :refer (with-resource)]
             [qbits.alia :as alia]
-            [taoensso.timbre :as timbre :refer (info)]
-            [org.httpkit.server :refer (run-server)]))
+            [org.httpkit.server :refer (run-server)]
+            [prime.utils :refer (with-resource)]
+            [taoensso.timbre :as timbre :refer (info)]))
 
 
 ;;; Fixture functions.
@@ -30,20 +32,14 @@
     (cr/write-schema cluster)))
 
 
-(defn cassandra-fixture
+(defn loglevel-fixture
   [f]
-  (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")]
-    cc/stop-cassandra
-    (while (not (cc/running? cassandra))
-      (info "Waiting for Cassandra daemon to be fully started...")
-      (Thread/sleep 500))
-    (info "Cassandra daemon fully started.")
-    (prepare-cassandra @cluster)
-    (reset! cr/consistency :one)
+  (let [log-level-before (:current-level @timbre/config)]
+    (timbre/set-level! :info)
     (try
       (f)
       (finally
-        (alia/shutdown @cluster)))))
+        (timbre/set-level! log-level-before)))))
 
 
 (defn http-kit-fixture
@@ -55,17 +51,20 @@
         (stop-fn)))))
 
 
-(defn loglevel-fixture
+(defn systems-fixture
   [f]
-  (let [log-level-before (:current-level @timbre/config)]
-    (timbre/set-level! :info)
+  (with-systems systems [:config (map-config {:cassandra {:config-file "cassandra.yaml"}})
+                         :cassandra embedded12]
+    (prepare-cassandra @cluster)
+    (reset! cr/consistency :one)
+    (start systems)
     (try
       (f)
       (finally
-        (timbre/set-level! log-level-before)))))
+        (alia/shutdown @cluster)))))
 
 
-(use-fixtures :once loglevel-fixture http-kit-fixture cassandra-fixture)
+(use-fixtures :once loglevel-fixture http-kit-fixture systems-fixture)
 
 
 ;;; Test functions.

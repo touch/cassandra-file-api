@@ -5,9 +5,10 @@
 (ns cassandra-file-api.core
   "The core functionality, glueing the other namespaces together."
   (:require [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)]
-            [prime.utils :refer (guard-let)]
             [clojure.string :refer (blank?)]
-            [publizr.cassandra-util :refer (prepare do-prepared)])
+            [prime.utils :refer (guard-let)]
+            [containium.systems :refer (protocol-forwarder)]
+            [containium.systems.cassandra :refer (EmbeddedCassandra prepare do-prepared)])
   (:import [org.apache.cassandra.cql3 UntypedResultSet]
            [java.text SimpleDateFormat]
            [java.util Calendar]
@@ -17,12 +18,14 @@
 
 ;;; Cassandra related.
 
-(def retrieve-query (delay (prepare "SELECT data FROM fs.files WHERE hash = ?;")))
+(def cassandra-system nil)
+
+(def retrieve-query "SELECT data FROM fs.files WHERE hash = ?;")
 
 
 (defn- retrieve-data
   [hash]
-  (let [^UntypedResultSet data (do-prepared (deref retrieve-query) :one hash)]
+  (let [^UntypedResultSet data (do-prepared cassandra-system retrieve-query :one [hash])]
     (when-not (.isEmpty data)
       (.. data one (getBytes "data") slice))))
 
@@ -57,10 +60,13 @@
 ;;; Containium related.
 
 (defn start
-  [config systems]
-  (info "Cassandra File API started."))
+  [systems]
+  (if-let [cassandra (:cassandra systems)]
+    (let [cassandra ((protocol-forwarder EmbeddedCassandra) cassandra)]
+      (alter-var-root #'cassandra-system (constantly cassandra))
+      (alter-var-root #'retrieve-query #(prepare cassandra %))
+      (info "Cassandra File API started."))
+    (throw (Exception. "Missing embedded Cassandra system."))))
 
 
-(defn stop
-  [_]
-  (info "Cassandra File API stopped."))
+(defn stop [_] (info "Cassandra File API stopped."))
