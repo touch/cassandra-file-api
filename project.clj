@@ -7,8 +7,6 @@
   :url "https://github.com/containium/cassandra-file-api"
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [boxure/shared_2.9.2 "0.1-SNAPSHOT"]
-                 [org.apache.cassandra/cassandra-all "1.2.3"]
-                 [io.netty/netty "3.5.9.Final"]  ; Remove this when Cassandra pom gets its dependencies right.
                  [midje "1.5.1"]
                  [com.taoensso/timbre "0.8.1"]]  ; Version 1.6 is available, update all?
   :profiles {:dev {:plugins [[lein-immutant "1.0.0.beta1"]]
