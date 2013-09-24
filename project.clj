@@ -7,12 +7,12 @@
   :url "https://github.com/containium/cassandra-file-api"
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [boxure/shared_2.9.2 "0.1-SNAPSHOT"]
-                 [midje "1.5.1"]
-                 [com.taoensso/timbre "0.8.1"]]  ; Version 1.6 is available, update all?
-  :profiles {:dev {:plugins [[lein-immutant "1.0.0.beta1"]]
-                   :immutant {:cassandra-config-file-path "cassandra.yaml"
-                              :netty-port 8090
-                              :nrepl-port 4343}}
-             :prod {:immutant {:cassandra-config-file-path "/etc/immutant/cassandra.yaml"
-                               :netty-port 8090}}}
-  :main cassandra-file-api.core)
+                 [com.taoensso/timbre "2.6.1"]]
+  :profiles {:provided {:dependencies [[containium/containium "0.1.0-SNAPSHOT"]]}
+             :dev {:dependencies [[leiningen-core "2.2.0"]
+                                  [org.apache.httpcomponents/httpclient "4.2.3"]
+                                  [midje "1.5.1"]]}}
+  :containium {:start cassandra-file-api.core/start
+              :stop cassandra-file-api.core/stop
+              :ring {:handler cassandra-file-api.core/app
+                     :context-path "/files"}})

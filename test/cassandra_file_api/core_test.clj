@@ -3,15 +3,17 @@
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 (ns cassandra-file-api.core-test
-  (:require [clojure.test :refer :all]
+  (:require [cassandra-file-api.core :refer :all]
+            [clojure.test :refer :all]
             [clojure.java.io :refer (copy)]
             [midje.sweet :refer :all]
-            [cassandra-file-api.core :refer :all]
-            [cassandra-file-api.cassandra :as cc]
-            [cassandra-file-api.netty :as cn]
+            [containium.systems :refer (with-systems)]
+            [containium.systems.config :refer (map-config)]
+            [containium.systems.ring :refer (test-http-kit)]
+            [containium.systems.cassandra :refer (embedded12)]
             [prime.types.cassandra-repository :as cr]
-            [prime.utils :refer (with-resource)]
             [qbits.alia :as alia]
+            [prime.utils :refer (with-resource)]
             [taoensso.timbre :as timbre :refer (info)]))
 
 
@@ -30,27 +32,6 @@
     (cr/write-schema cluster)))
 
 
-(defn cassandra-fixture
-  [f]
-  (with-resource [cassandra (cc/start-cassandra "file:dev-resources/cassandra.yaml")] cc/stop-cassandra
-    (while (not (cc/running? cassandra))
-      (info "Waiting for Cassandra daemon to be fully started...")
-      (Thread/sleep 500))
-    (info "Cassandra daemon fully started.")
-    (prepare-cassandra @cluster)
-    (reset! cr/consistency :one)
-    (try
-      (f)
-      (finally
-        (alia/shutdown @cluster)))))
-
-
-(defn netty-fixture
-  [f]
-  (with-resource [_ (cn/start-netty 58080 (cn/make-handler handler-fn))] cn/stop-netty
-    (f)))
-
-
 (defn loglevel-fixture
   [f]
   (let [log-level-before (:current-level @timbre/config)]
@@ -61,7 +42,22 @@
         (timbre/set-level! log-level-before)))))
 
 
-(use-fixtures :once loglevel-fixture netty-fixture cassandra-fixture)
+(defn systems-fixture
+  [f]
+  (with-systems systems [:config (map-config {:cassandra {:config-file "cassandra.yaml"}
+                                              :http-kit {:port 58080}})
+                         :ring (test-http-kit #'app)
+                         :cassandra embedded12]
+    (prepare-cassandra @cluster)
+    (reset! cr/consistency :one)
+    (start systems)
+    (try
+      (f)
+      (finally
+        (alia/shutdown @cluster)))))
+
+
+(use-fixtures :once loglevel-fixture systems-fixture)
 
 
 ;;; Test functions.
@@ -70,4 +66,5 @@
   (fact "a file can be retrieved"
     (let [repo (cr/cassandra-repository @cluster "not-used-atm")]
       (cr/store repo #(copy "hi there!" %))
+      (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!"
       (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!")))
