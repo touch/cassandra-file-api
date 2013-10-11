@@ -50,7 +50,7 @@
                          :cassandra embedded12]
     (prepare-cassandra @cluster)
     (reset! cr/consistency :one)
-    (start systems)
+    (start systems {})
     (try
       (f)
       (finally

@@ -60,7 +60,7 @@
 ;;; Containium related.
 
 (defn start
-  [systems]
+  [systems conf]
   (if-let [cassandra (:cassandra systems)]
     (let [cassandra ((protocol-forwarder EmbeddedCassandra) cassandra)]
       (alter-var-root #'cassandra-system (constantly cassandra))
