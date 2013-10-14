@@ -6,9 +6,10 @@
   "The core functionality, glueing the other namespaces together."
   (:require [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)]
             [clojure.string :refer (blank?)]
+            [clojure.java.io :as io]
             [prime.utils :refer (guard-let)]
             [containium.systems :refer (protocol-forwarder)]
-            [containium.systems.cassandra :refer (EmbeddedCassandra prepare do-prepared)])
+            [containium.systems.cassandra :refer (EmbeddedCassandra prepare do-prepared has-keyspace? write-schema)])
   (:import [org.apache.cassandra.cql3 UntypedResultSet]
            [java.text SimpleDateFormat]
            [java.util Calendar]
@@ -63,6 +64,8 @@
   [systems conf]
   (if-let [cassandra (:cassandra systems)]
     (let [cassandra ((protocol-forwarder EmbeddedCassandra) cassandra)]
+      (when-not (has-keyspace? cassandra "fs")
+        (write-schema cassandra (slurp (io/resource "cassandra-repo-schema.cql"))))
       (alter-var-root #'cassandra-system (constantly cassandra))
       (alter-var-root #'retrieve-query #(prepare cassandra %))
       (info "Cassandra File API started."))
