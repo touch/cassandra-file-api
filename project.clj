@@ -10,6 +10,7 @@
                  [boxure/shared_2.9.2 "0.1-SNAPSHOT"]]
   :profiles {:provided {:dependencies [[org.apache.cassandra/cassandra-all "1.2.10"]]}
              :dev {:dependencies [[leiningen-core "2.2.0"]
+                                  [http-kit "2.1.10" :exclusions [[org.clojure/clojure]]]
                                   [org.apache.httpcomponents/httpclient "4.2.3"]
                                   [midje "1.5.1"]]}}
   :exclusions [[cc.qbits/alia] [kafka/core-kafka_2.9.2] [org.elasticsearch/elasticsearch] [org.scala-lang/scala-library] [org.apache.cassandra/cassandra-all]]
