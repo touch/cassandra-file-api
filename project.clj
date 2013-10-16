@@ -14,7 +14,7 @@
                                   [boxure  "0.1.0-SNAPSHOT"]
                                   [org.apache.httpcomponents/httpclient "4.2.3"]
                                   [midje "1.5.1"]]}}
-  :exclusions [[kafka/core-kafka_2.9.2] [org.elasticsearch/elasticsearch] [org.apache.cassandra/cassandra-all]]
+  :exclusions [[org.clojure/clojure] [kafka/core-kafka_2.9.2] [org.elasticsearch/elasticsearch] [org.apache.cassandra/cassandra-all]]
   :plugins [[lein-libdir "0.1.1"]]
   :containium {:start cassandra-file-api.core/start
               :stop cassandra-file-api.core/stop
