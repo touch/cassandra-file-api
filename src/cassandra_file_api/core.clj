@@ -17,6 +17,18 @@
            [java.nio.charset Charset]))
 
 
+;;; Helper functions.
+
+(defn strip-extension
+  "Removes the extension from a String, e.g.
+  (strip-extension \"foo.bar.baz\") => \"foo.bar\"
+  (strip-extension \"foobarbaz\") => \"foobarbaz\""
+  [s]
+  (guard-let [i (.lastIndexOf s ".") :when-not (partial = -1)]
+    (subs s 0 (.lastIndexOf s "."))
+    s))
+
+
 ;;; Cassandra related.
 
 (def cassandra-system nil)
@@ -52,7 +64,7 @@
   (if ((request :headers) "If-Modified-Since")
     (debug-response {:status 304})
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
-      (if-let [bytebuffer (retrieve-data hash)]
+      (if-let [bytebuffer (retrieve-data (strip-extension hash))]
         (debug-response (assoc ok-response :body bytebuffer))
         (debug-response {:status 404}))
       (debug-response {:status 400}))))
