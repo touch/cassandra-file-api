@@ -9,7 +9,8 @@
             [clojure.java.io :as io]
             [prime.utils :refer (guard-let)]
             [containium.systems :refer (protocol-forwarder)]
-            [containium.systems.cassandra :refer (EmbeddedCassandra prepare do-prepared has-keyspace? write-schema)])
+            [containium.systems.cassandra :refer (Cassandra prepare do-prepared has-keyspace?
+                                                           write-schema)])
   (:import [org.apache.cassandra.cql3 UntypedResultSet]
            [java.text SimpleDateFormat]
            [java.util Calendar]
@@ -38,9 +39,9 @@
 
 (defn- retrieve-data
   [hash]
-  (let [^UntypedResultSet data (do-prepared cassandra-system retrieve-query :one [hash])]
-    (when-not (.isEmpty data)
-      (.. data one (getBytes "data") slice))))
+  (let [data (do-prepared cassandra-system retrieve-query {:consistency :one} [hash])]
+    (when-not (empty? data)
+      (get (first data) "data"))))
 
 
 ;;; Ring related.
@@ -75,7 +76,7 @@
 (defn start
   [systems conf]
   (if-let [cassandra (:cassandra systems)]
-    (let [cassandra ((protocol-forwarder EmbeddedCassandra) cassandra)]
+    (let [cassandra ((protocol-forwarder Cassandra) cassandra)]
       (when-not (has-keyspace? cassandra "fs")
         (write-schema cassandra (slurp (io/resource "cassandra-repo-schema.cql"))))
       (alter-var-root #'cassandra-system (constantly cassandra))

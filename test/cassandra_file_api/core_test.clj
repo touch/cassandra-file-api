@@ -5,31 +5,29 @@
 (ns cassandra-file-api.core-test
   (:require [cassandra-file-api.core :refer :all]
             [clojure.test :refer :all]
-            [clojure.java.io :refer (copy)]
+            [clojure.java.io :as io]
             [midje.sweet :refer :all]
             [containium.systems :refer (with-systems)]
-            [containium.systems.config :refer (map-config)]
-            [containium.systems.ring :refer (test-http-kit)]
-            [containium.systems.cassandra :refer (embedded12)]
-            [prime.types.cassandra-repository :as cr]
-            [qbits.alia :as alia]
-            [prime.utils :refer (with-resource)]
+            [containium.systems.config :as config]
+            [containium.systems.ring :as ring]
+            [containium.systems.cassandra :as cassandra]
+            [containium.systems.cassandra.embedded12 :as embedded]
+            [containium.systems.cassandra.alia1 :as alia]
+            [prime.types.cassandra-repository :as repository]
+            [prime.utils :as utils]
             [taoensso.timbre :as timbre :refer (info)]))
 
 
 ;;; Fixture functions.
 
-(def cluster (delay (alia/cluster "localhost" :port 9042)))
-
-
 (defn- prepare-cassandra
   "Write the schema to the database."
-  [cluster]
-  (alia/with-session (alia/connect cluster)
-    (try
-      (alia/execute "DROP KEYSPACE fs;")
-      (catch Exception ex))
-    (cr/write-schema cluster)))
+  [alia]
+  (when (cassandra/has-keyspace? alia "fs")
+    (cassandra/write-schema alia "DROP KEYSPACE fs;"))
+  (repository/write-schema (:cluster alia))
+  (let [repo (repository/cassandra-repository (:cluster alia) "not-used-atm")]
+    (repository/store repo #(io/copy "hi there!" %))))
 
 
 (defn loglevel-fixture
@@ -44,17 +42,16 @@
 
 (defn systems-fixture
   [f]
-  (with-systems systems [:config (map-config {:cassandra {:config-file "cassandra.yaml"}
-                                              :http-kit {:port 58080}})
-                         :ring (test-http-kit #'app)
-                         :cassandra embedded12]
-    (prepare-cassandra @cluster)
-    (reset! cr/consistency :one)
+  (with-systems systems [:config (config/map-config {:cassandra {:config-file "cassandra.yaml"}
+                                                     :alia {:contact-points ["localhost"]}
+                                                     :http-kit {:port 58080}})
+                         :cassandra embedded/embedded12
+                         :alia (alia/alia1 :alia)
+                         :ring (ring/test-http-kit #'app)]
+    (reset! repository/consistency :one)
+    (prepare-cassandra (:alia systems))
     (start systems {})
-    (try
-      (f)
-      (finally
-        (alia/shutdown @cluster)))))
+    (f)))
 
 
 (use-fixtures :once loglevel-fixture systems-fixture)
@@ -64,8 +61,11 @@
 
 (deftest retrieve-test
   (fact "a file can be retrieved"
-    (let [repo (cr/cassandra-repository @cluster "not-used-atm")]
-      (cr/store repo #(copy "hi there!" %))
-      (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!"
-      (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!"
-      (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA.doc") => "hi there!")))
+    ;; Retrieve it.
+    (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!"
+
+    ;; Retrievi it a second time.
+    (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA") => "hi there!"
+
+    ;; Ignore an arbitrary extension after the hash.
+    (slurp "http://localhost:58080/PjbTYi9a2tAQgMwhILtywHFOzsYRjrlSNYZBC3Q1roA.doc") => "hi there!"))
