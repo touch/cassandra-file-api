@@ -9,7 +9,7 @@
             [midje.sweet :refer :all]
             [containium.systems :refer (with-systems)]
             [containium.systems.config :as config]
-            [containium.systems.ring :as ring]
+            [containium.systems.ring.http-kit :as ring]
             [containium.systems.cassandra :as cassandra]
             [containium.systems.cassandra.embedded12 :as embedded]
             [containium.systems.cassandra.alia1 :as alia]
