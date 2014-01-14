@@ -5,16 +5,15 @@
 (defproject cassandra-file-api "0.1.0-SNAPSHOT"
   :description "A REST interface to retrieve files from our Cassandra repository."
   :url "https://github.com/containium/cassandra-file-api"
-  :dependencies [[boxure/clojure "1.5.1"]
-                 [containium/containium "0.1.0-SNAPSHOT" :exclusions [leiningen-core clojure-complete boxure com.taoensso/nippy http-kit jline midje]]
-                 [boxure/shared_2.9.2 "0.1-SNAPSHOT"]]
-  :profiles {:provided {:dependencies [[org.apache.cassandra/cassandra-all "1.2.10"]]}
-             :dev {:dependencies [[leiningen-core "2.2.0"]
-                                  [http-kit "2.1.10" :exclusions [[org.clojure/clojure]]]
-                                  [boxure  "0.1.0-SNAPSHOT"]
-                                  [org.apache.httpcomponents/httpclient "4.2.3"]
-                                  [midje "1.5.1"]]}}
-  :exclusions [[org.clojure/clojure] [kafka/core-kafka_2.9.2] [org.elasticsearch/elasticsearch] [org.apache.cassandra/cassandra-all]]
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [containium/containium "0.1.0-SNAPSHOT"
+                  :exclusions [leiningen-core clojure-complete boxure com.taoensso/nippy http-kit
+                               jline midje boxure/clojure]]
+                 [prime/utils "0.1.0-SNAPSHOT"]
+                 [com.taoensso/timbre "2.6.2"]]
+  :profiles {:test {:dependencies [[prime/filerepository-cassandra "0.1.0-SNAPSHOT"]
+                                   [http-kit "2.1.10"]
+                                   [boxure  "0.1.0-SNAPSHOT"]]}}
   :plugins [[lein-libdir "0.1.1"]]
   :containium {:start cassandra-file-api.core/start
               :stop cassandra-file-api.core/stop

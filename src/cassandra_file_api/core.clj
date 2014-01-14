@@ -11,8 +11,7 @@
             [containium.systems :refer (protocol-forwarder)]
             [containium.systems.cassandra :refer (Cassandra prepare do-prepared has-keyspace?
                                                            write-schema)])
-  (:import [org.apache.cassandra.cql3 UntypedResultSet]
-           [java.text SimpleDateFormat]
+  (:import [java.text SimpleDateFormat]
            [java.util Calendar]
            [java.nio CharBuffer]
            [java.nio.charset Charset]))
