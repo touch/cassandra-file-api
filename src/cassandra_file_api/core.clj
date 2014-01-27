@@ -8,7 +8,6 @@
             [clojure.string :refer (blank?)]
             [clojure.java.io :as io]
             [prime.utils :refer (guard-let)]
-            [containium.systems :refer (protocol-forwarder)]
             [containium.systems.cassandra :refer (Cassandra prepare do-prepared has-keyspace?
                                                            write-schema)])
   (:import [java.text SimpleDateFormat]
@@ -75,12 +74,11 @@
 (defn start
   [systems conf]
   (if-let [cassandra (:cassandra systems)]
-    (let [cassandra ((protocol-forwarder Cassandra) cassandra)]
-      (when-not (has-keyspace? cassandra "fs")
-        (write-schema cassandra (slurp (io/resource "cassandra-repo-schema.cql"))))
-      (alter-var-root #'cassandra-system (constantly cassandra))
-      (alter-var-root #'retrieve-query #(prepare cassandra %))
-      (info "Cassandra File API started."))
+    (do (when-not (has-keyspace? cassandra "fs")
+          (write-schema cassandra (slurp (io/resource "cassandra-repo-schema.cql"))))
+        (alter-var-root #'cassandra-system (constantly cassandra))
+        (alter-var-root #'retrieve-query #(prepare cassandra %))
+        (info "Cassandra File API started."))
     (throw (Exception. "Missing embedded Cassandra system."))))
 
 
