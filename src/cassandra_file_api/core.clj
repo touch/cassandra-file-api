@@ -8,12 +8,12 @@
             [clojure.string :refer (blank?)]
             [clojure.java.io :as io]
             [prime.utils :refer (guard-let)]
-            [containium.systems.cassandra :refer (Cassandra prepare do-prepared has-keyspace?
-                                                           write-schema)])
+            [prime.types.cassandra-repository :as cr])
   (:import [java.text SimpleDateFormat]
            [java.util Calendar]
            [java.nio CharBuffer]
-           [java.nio.charset Charset]))
+           [java.nio.charset Charset]
+           [org.apache.commons.codec.binary Base64]))
 
 
 ;;; Helper functions.
@@ -30,16 +30,12 @@
 
 ;;; Cassandra related.
 
-(def cassandra-system nil)
-
-(def retrieve-query "SELECT data FROM fs.files WHERE hash = ?;")
+(def cassandra-repo nil)
 
 
 (defn- retrieve-data
-  [hash]
-  (let [data (do-prepared cassandra-system retrieve-query {:consistency :one} [hash])]
-    (when-not (empty? data)
-      (get (first data) "data"))))
+  [^String hash]
+  (cr/stream cassandra-repo (prime.types/FileRef ^bytes (Base64/decodeBase64 hash))))
 
 
 ;;; Ring related.
@@ -60,11 +56,11 @@
 (defn app
   [request]
   (debug "Got request:" request)
-  (if ((request :headers) "If-Modified-Since")
+  (if (get (request :headers) "If-Modified-Since")
     (debug-response {:status 304})
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
-      (if-let [bytebuffer (retrieve-data (strip-extension hash))]
-        (debug-response (assoc ok-response :body bytebuffer))
+      (if-let [stream (retrieve-data (strip-extension hash))]
+        (debug-response (assoc ok-response :body stream))
         (debug-response {:status 404}))
       (debug-response {:status 400}))))
 
@@ -74,11 +70,9 @@
 (defn start
   [systems conf]
   (if-let [cassandra (:cassandra systems)]
-    (do (when-not (has-keyspace? cassandra "fs")
-          (write-schema cassandra (slurp (io/resource "cassandra-repo-schema.cql"))))
-        (alter-var-root #'cassandra-system (constantly cassandra))
-        (alter-var-root #'retrieve-query #(prepare cassandra %))
-        (info "Cassandra File API started."))
+    (let [repo (cr/cassandra-repository cassandra :one "fs")]
+      (alter-var-root #'cassandra-repo (constantly repo))
+      (info "Cassandra File API started."))
     (throw (Exception. "Missing embedded Cassandra system."))))
 
 
