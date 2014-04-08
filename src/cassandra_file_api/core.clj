@@ -35,7 +35,7 @@
 
 (defn- retrieve-data
   [^String hash]
-  (cr/stream cassandra-repo (prime.types/FileRef ^bytes (Base64/decodeBase64 hash))))
+  (cr/fetch cassandra-repo (prime.types/FileRef ^bytes (Base64/decodeBase64 hash))))
 
 
 ;;; Ring related.
