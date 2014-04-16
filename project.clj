@@ -12,9 +12,9 @@
                  [com.taoensso/timbre "2.6.2"]
                  [commons-codec "1.8"]]
   :profiles {:test {:dependencies [[containium/containium "0.1.0-SNAPSHOT"
-                                    :exclusions [leiningen-core clojure-complete boxure com.taoensso/nippy http-kit
+                                    :exclusions [leiningen-core clojure-complete boxure
+                                                 com.taoensso/nippy
                                                  jline midje boxure/clojure]]
-                                   [http-kit "2.1.10"]
                                    [boxure "0.1.0-SNAPSHOT"]]}}
   :plugins [[lein-libdir "0.1.1"]]
   :containium {:start cassandra-file-api.core/start
