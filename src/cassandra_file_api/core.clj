@@ -7,6 +7,7 @@
   (:require [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)]
             [clojure.string :refer (blank?)]
             [clojure.java.io :as io]
+            [ring.util.response :refer (resource-response)]
             [prime.utils :refer (guard-let)]
             [prime.types.cassandra-repository :as cr])
   (:import [java.text SimpleDateFormat]
@@ -61,7 +62,8 @@
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
       (if-let [stream (retrieve-data (strip-extension hash))]
         (debug-response (assoc ok-response :body stream))
-        (debug-response {:status 404}))
+        (or (resource-response (:uri request))
+            (debug-response {:status 404})))
       (debug-response {:status 400}))))
 
 
