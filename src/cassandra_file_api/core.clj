@@ -62,7 +62,9 @@
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
       (if-let [stream (retrieve-data (strip-extension hash))]
         (debug-response (assoc ok-response :body stream))
-        (or (resource-response (:uri request))
+        (or (if-let [res (resource-response (:uri request))]
+              (if (.endsWith (-> request :uri str) ".xml")
+                (assoc-in res [:headers "content-type"] "application/xml")))
             (debug-response {:status 404})))
       (debug-response {:status 400}))))
 
