@@ -53,6 +53,10 @@
   (debug "Responding with:" response)
   response)
 
+(defn- with-headers [request response]
+  (if (.endsWith (-> request :uri str) ".jar")
+    (assoc-in response [:headers "content-encoding"] "gzip")
+    response))
 
 (defn app
   [request]
@@ -60,11 +64,12 @@
   (if (get (request :headers) "If-Modified-Since")
     (debug-response {:status 304})
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
-      (if-let [stream (retrieve-data (strip-extension hash))]
-        (debug-response (assoc ok-response :body stream))
+      (if-let [stream (retrieve-data (strip-extension hash))] ; Hiercheck of gzip
+        (debug-response (with-headers request (assoc ok-response :body stream)))
         (or (if-let [res (resource-response (:uri request))]
               (if (.endsWith (-> request :uri str) ".xml")
-                (assoc-in res [:headers "content-type"] "application/xml")))
+                (assoc-in res [:headers "content-type"] "application/xml")
+                res))
             (debug-response {:status 404})))
       (debug-response {:status 400}))))
 
