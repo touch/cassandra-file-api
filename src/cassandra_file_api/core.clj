@@ -7,6 +7,7 @@
   (:require [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)]
             [clojure.string :refer (blank?)]
             [clojure.java.io :as io]
+            [ring.middleware.cors :refer (wrap-cors)]
             [ring.util.response :refer (resource-response)]
             [prime.utils :refer (guard-let)]
             [prime.types.cassandra-repository :as cr])
@@ -45,9 +46,7 @@
   (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")
         expires-str (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance)
                                                            (.add Calendar/YEAR 1))))]
-    {:status 200 :headers {"Expires" expires-str, 
-                           "Access-Control-Allow-Origin" "*",
-                           "Access-Control-Allow-Methods" "GET, OPTIONS"}}))
+    {:status 200 :headers {"Expires" expires-str}}))
 
 
 (defn debug-response
@@ -60,7 +59,7 @@
     (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "text/js")
     response))
 
-(defn app
+(defn cassandra-file-app
   [request]
   (debug "Got request:" request)
   (if (get (request :headers) "If-Modified-Since")
@@ -75,6 +74,10 @@
             (debug-response {:status 404})))
       (debug-response {:status 400}))))
 
+
+(def app
+  (wrap-cors cassandra-file-app :access-control-allow-origin #".*"
+                                :access-control-allow-methods [:get]))
 
 ;;; Containium related.
 
