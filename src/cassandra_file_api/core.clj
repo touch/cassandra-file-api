@@ -7,7 +7,6 @@
   (:require [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)]
             [clojure.string :refer (blank?)]
             [clojure.java.io :as io]
-            [ring.middleware.cors :refer (wrap-cors)]
             [ring.util.response :refer (resource-response)]
             [prime.utils :refer (guard-let)]
             [prime.types.cassandra-repository :as cr])
@@ -59,7 +58,7 @@
     (assoc-in response [:headers] {"content-encoding" "gzip" "content-type" "text/js"})
     response))
 
-(defn cassandra-file-app
+(defn app
   [request]
   (debug "Got request:" request)
   (if (get (request :headers) "If-Modified-Since")
@@ -74,9 +73,6 @@
             (debug-response {:status 404})))
       (debug-response {:status 400}))))
 
-(def app
-  (wrap-cors cassandra-file-app :access-control-allow-origin #".*"
-                                :access-control-allow-methods [:get]))
 
 ;;; Containium related.
 
