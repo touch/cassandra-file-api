@@ -45,7 +45,9 @@
   (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")
         expires-str (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance)
                                                            (.add Calendar/YEAR 1))))]
-    {:status 200 :headers {"Expires" expires-str, "Access-Control-Allow-Origin" "*"}}))
+    {:status 200 :headers {"Expires" expires-str, 
+                           "Access-Control-Allow-Origin" "*",
+                           "Access-Control-Allow-Methods" "GET, OPTIONS"}}))
 
 
 (defn debug-response
