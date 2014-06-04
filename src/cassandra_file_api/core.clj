@@ -55,7 +55,7 @@
 
 (defn- with-headers [request response]
   (if (.endsWith (-> request :uri str) ".jar")
-    (assoc-in response [:headers] {"Content-Encoding" "gzip" "Content-Type" "text/js"})
+    (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "text/js")
     response))
 
 (defn app
