@@ -11,6 +11,7 @@
             [containium.systems.ring.http-kit :as ring]
             [containium.systems.cassandra :as cassandra]
             [containium.systems.cassandra.embedded12 :as embedded]
+            [containium.systems.logging :as logging]
             [prime.types.cassandra-repository :as repository]
             [prime.utils :as utils]
             [taoensso.timbre :as timbre :refer (info)]))
@@ -35,6 +36,7 @@
   [f]
   (with-systems systems [:config (config/map-config {:cassandra {:config-file "cassandra.yaml"}
                                                      :http-kit {:port 58080}})
+                         :logging logging/logger
                          :cassandra embedded/embedded12
                          :ring (ring/test-http-kit #'app)]
     (deliver repository (repository/cassandra-repository (:cassandra systems) :one "not-used-atm"))
