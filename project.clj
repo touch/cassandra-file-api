@@ -10,7 +10,7 @@
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
                  [prime/filerepository-cassandra "0.1.0-SNAPSHOT"]
                  [ring-cors "0.1.3"]
-                 [com.taoensso/timbre "2.6.2"]
+                 [com.taoensso/timbre "3.2.1"]
                  [commons-codec "1.8"]]
   :profiles {:test {:dependencies [[containium/containium "0.1.0-SNAPSHOT"
                                     :exclusions [leiningen-core clojure-complete boxure
