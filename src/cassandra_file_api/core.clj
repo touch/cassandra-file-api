@@ -56,7 +56,7 @@
 
 (defn- with-headers [request response]
   (if (.endsWith (-> request :uri str) ".jar")
-    (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "text/js")
+    (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "text/js", "Access-Control-Allow-Origin" "*")
     response))
 
 (defn cassandra-file-app
@@ -71,8 +71,8 @@
               (if (.endsWith (-> request :uri str) ".xml")
                 (assoc-in res [:headers "content-type"] "application/xml")
                 res))
-            (debug-response {:status 404})))
-      (debug-response {:status 400}))))
+            (debug-response {:status 404 :headers {"Access-Control-Allow-Origin" "*"}})))
+      (debug-response {:status 400 :headers {"Access-Control-Allow-Origin" "*"}}))))
 
 
 (def app
