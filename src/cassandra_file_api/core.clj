@@ -12,7 +12,7 @@
             [prime.utils :refer (guard-let)]
             [prime.types.cassandra-repository :as cr])
   (:import [java.text SimpleDateFormat]
-           [java.util Calendar]
+           [java.util Calendar Locale]
            [java.nio CharBuffer]
            [java.nio.charset Charset]
            [org.apache.commons.codec.binary Base64]))
@@ -43,7 +43,7 @@
 ;;; Ring related.
 
 (def ok-response
-  (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz")
+  (let [rfc1123-formatter (SimpleDateFormat. "EEE, dd MMM yyyy HH:mm:ss zzz" Locale/US)
         expires-str (.format rfc1123-formatter (.getTime (doto (Calendar/getInstance)
                                                            (.add Calendar/YEAR 1))))]
     {:status 200 :headers {"Expires" expires-str}}))
