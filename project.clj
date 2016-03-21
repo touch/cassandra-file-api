@@ -5,12 +5,12 @@
 (defproject cassandra-file-api "0.1.0-SNAPSHOT"
   :description "A REST interface to retrieve files from our Cassandra repository."
   :url "https://github.com/containium/cassandra-file-api"
-  :dependencies [[org.clojure/clojure "1.7.0"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
                  [prime/utils "0.1.0-SNAPSHOT"
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
                  [prime/filerepository-cassandra "0.1.0-SNAPSHOT"]
                  [ring-cors "0.1.6"]
-                 [com.taoensso/timbre "3.2.1"]
+                 [com.taoensso/timbre "4.3.1"]
                  [commons-codec "1.8"]]
   :profiles {:test {:dependencies [[containium/containium "0.1.0-SNAPSHOT"
                                     :exclusions [leiningen-core clojure-complete boxure

@@ -24,12 +24,8 @@
 
 (defn loglevel-fixture
   [f]
-  (let [log-level-before (:current-level @timbre/config)]
-    (timbre/set-level! :info)
-    (try
-      (f)
-      (finally
-        (timbre/set-level! log-level-before)))))
+  (timbre/with-level :info
+    (f)))
 
 
 (defn systems-fixture
