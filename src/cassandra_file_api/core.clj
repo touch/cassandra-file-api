@@ -56,9 +56,10 @@
   response)
 
 (defn- with-headers [request response]
-  (if (.endsWith (-> request :uri str) ".jsp")
-    (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "text/js", "Access-Control-Allow-Origin" "*")
-    response))
+  (cond
+    (.endsWith (-> request :uri str) ".jsp") (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "text/js", "Access-Control-Allow-Origin" "*")
+    (.endsWith (-> request :uri str) ".svg") (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "image/svg+xml", "Access-Control-Allow-Origin" "*")))
+  
 
 (defn cassandra-file-app
   [request]
