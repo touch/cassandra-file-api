@@ -11,6 +11,7 @@
                  [prime/filerepository-cassandra "0.1.0-SNAPSHOT"]
                  [ring-cors "0.1.6"]
                  [com.taoensso/timbre "4.3.1"]
+                 [amalloy/ring-gzip-middleware "0.1.3"]
                  [commons-codec "1.8"]]
   :profiles {:test {:dependencies [[containium/containium "0.1.0-SNAPSHOT"
                                     :exclusions [leiningen-core clojure-complete boxure
