@@ -84,10 +84,14 @@
     (future
       (with-open [out (GZIPOutputStream. p-out)]
         (if (seq? body)
-          (doseq [string body] (io/copy (str string) out))
+          (do
+            (debug "sequence body")
+            (doseq [string body] (io/copy (str string) out)))
           (if (instance? ByteBuffer body) 
-              (let [outChannel (Channels/newChannel out)]
-                  (.write outChannel body))
+              (do
+                (debug "byte buffer body")
+                (let [outChannel (Channels/newChannel out)]
+                  (.write outChannel body)))
               (io/copy body out))))
       (when (instance? Closeable body)
         (.close ^Closeable body)))
