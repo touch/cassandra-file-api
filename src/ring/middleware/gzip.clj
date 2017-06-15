@@ -1,6 +1,7 @@
 (ns ring.middleware.gzip
   "Ring gzip compression."
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            [taoensso.timbre :as timbre :refer (trace debug info warn error fatal spy)])
   (:import (java.io InputStream
                     Closeable
                     File
@@ -65,6 +66,12 @@
 (defn- supported-response?
   [resp]
   (let [{:keys [status headers]} resp]
+    (debug (str
+        "(supported-status? status) " (supported-status? status)
+        "\n(unencoded-type? headers)" (unencoded-type? headers)
+        "\n(supported-type? resp)" (supported-type? resp)
+        "\n(supported-size? resp)" (supported-size? resp)
+        ))
     (and (supported-status? status)
          (unencoded-type? headers)
          (supported-type? resp)
@@ -97,8 +104,16 @@
   [handler]
   (fn [req]
     (if (accepts-gzip? req)
-      (let [resp (handler req)]
-        (if (supported-response? resp)
-          (gzip-response resp)
-          resp))
-      (handler req))))
+      (do
+          (debug "accept gzip")
+          (let [resp (handler req)]
+            (if (supported-response? resp)
+                (do
+                    (debug "supported response")
+                    (gzip-response resp))
+                (do
+                    (debug "unsupported response")
+                    resp))))
+        (do
+            (debug "do not accept gzip")
+            (handler req)))))
