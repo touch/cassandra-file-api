@@ -8,7 +8,6 @@
             [clojure.string :refer (blank?)]
             [clojure.java.io :as io]
             [ring.middleware.cors :refer (wrap-cors)]
-            [ring.middleware.gzip :refer (wrap-gzip)]
             [ring.util.response :refer (resource-response)]
             [prime.utils :refer (guard-let)]
             [prime.types.cassandra-repository :as cr])
@@ -82,8 +81,7 @@
 (def app
   (-> cassandra-file-app 
       (wrap-cors :access-control-allow-origin #".*"
-                 :access-control-allow-methods [:get])
-      (wrap-gzip)))
+                 :access-control-allow-methods [:get])))
 
 ;;; Containium related.
 
