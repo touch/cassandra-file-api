@@ -10,7 +10,8 @@
             [ring.middleware.cors :refer (wrap-cors)]
             [ring.util.response :refer (resource-response)]
             [prime.utils :refer (guard-let)]
-            [prime.types.cassandra-repository :as cr])
+            [prime.types.cassandra-repository :as cr]
+            [ring.util.response :as response])
   (:import [java.text SimpleDateFormat]
            [java.util Calendar Locale]
            [java.nio CharBuffer]
@@ -85,7 +86,7 @@
   (if response
     (if-let [allow-origin (response/get-header response "Access-Control-Allow-Origin")]
       response
-      (header response "Access-Control-Allow-Origin" origin))))
+      (response/header response "Access-Control-Allow-Origin" origin))))
 
 (defn wrap-allow-origin
   "Middleware that adds a Allow Origin header of the response if
