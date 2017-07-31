@@ -85,7 +85,7 @@
   (if response
     (if-let [allow-origin (response/get-header response "Access-Control-Allow-Origin")]
       response
-      (header response "Access-Control-Allow-Origin" origin)))
+      (header response "Access-Control-Allow-Origin" origin))))
 
 (defn wrap-allow-origin
   "Middleware that adds a Allow Origin header of the response if
