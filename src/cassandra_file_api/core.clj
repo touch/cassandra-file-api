@@ -78,10 +78,34 @@
       (debug-response {:status 400 :headers {"Access-Control-Allow-Origin" "*"}}))))
 
 
+
+(defn default-origin-response
+  "Add a default Allow origin header for response"
+  [response origin]
+  (if response
+    (if-let [allow-origin (response/get-header response "Access-Control-Allow-Origin")]
+      response
+      (header response "Access-Control-Allow-Origin" origin)))
+
+(defn wrap-allow-origin
+  "Middleware that adds a Allow Origin header of the response if
+  one was not set by the handler."
+  [handler origin]
+  (fn
+    ([request]
+     (default-origin-response (handler request) origin))
+    ([request respond raise]
+     (handler request #(respond (default-origin-response % origin)) raise))))
+
 (def app
   (-> cassandra-file-app 
       (wrap-cors :access-control-allow-origin #".*"
-                 :access-control-allow-methods [:get])))
+                 :access-control-allow-methods [:get])
+      (wrap-allow-origin "*")))
+
+
+
+
 
 ;;; Containium related.
 
