@@ -101,7 +101,7 @@
 (def app
   (-> cassandra-file-app 
       (wrap-cors :access-control-allow-origin #".*"
-                 :access-control-allow-methods [:get])
+                 :access-control-allow-methods [:get :post :options])
       (wrap-allow-origin "*")))
 
 
