@@ -60,6 +60,7 @@
   (cond
     (.endsWith (-> request :uri str) ".jsp") (update-in response [:headers] assoc "Content-Encoding" "gzip", "Content-Type" "text/js", "Access-Control-Allow-Origin" "*")
     (.endsWith (-> request :uri str) ".svg") (update-in response [:headers] assoc "Content-Type" "image/svg+xml", "Access-Control-Allow-Origin" "*")
+    (.endsWith (-> request :uri str) ".woff") (update-in response [:headers] assoc "Content-Type" "image/application/x-font-woff", "Access-Control-Allow-Origin" "*")
     (.endsWith (-> request :uri str) ".jpg") (update-in response [:headers] assoc "Content-Type" "image/jpeg", "Access-Control-Allow-Origin" "*")
     :else response))
   
