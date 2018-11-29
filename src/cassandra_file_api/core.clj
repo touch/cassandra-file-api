@@ -16,7 +16,8 @@
            [java.util Calendar Locale]
            [java.nio CharBuffer]
            [java.nio.charset Charset]
-           [org.apache.commons.codec.binary Base64]))
+           [org.apache.commons.codec.binary Base64]
+           [com.esotericsoftware.kryo.io ByteBufferInputStream]))
 
 
 ;;; Helper functions.
@@ -71,7 +72,7 @@
     (debug-response {:status 304})
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
       (if-let [stream (retrieve-data (strip-extension hash))] ; Hiercheck of gzip
-        (debug-response (with-headers request (assoc ok-response :body stream)))
+        (debug-response (with-headers request (assoc ok-response :body (ByteBufferInputStream. stream))))
         (or (if-let [res (resource-response (:uri request))]
               (if (.endsWith (-> request :uri str) ".xml")
                 (assoc-in res [:headers "content-type"] "application/xml")
