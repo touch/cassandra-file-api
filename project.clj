@@ -10,7 +10,7 @@
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
                  [prime/filerepository-cassandra "0.2.0-SNAPSHOT"]
                  [ring-cors "0.1.6"]
-                 [com.esotericsoftware.kryo/kryo "3.0.3"]
+                 [com.esotericsoftware/kryo "3.0.3"]
                  [com.taoensso/timbre "4.3.1"]
                  [commons-codec "1.8"]]
   :profiles {:test {:dependencies [[containium/containium "0.2.0-SNAPSHOT"
