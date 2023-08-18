@@ -67,7 +67,7 @@
   
 (defn cassandra-file-app
   [request]
-  (debug "Got request:" request)
+  #_(debug "Got request:" request)
   (if (get (request :headers) "If-Modified-Since")
     (debug-response {:status 304})
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]

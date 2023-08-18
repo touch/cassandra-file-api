@@ -2,18 +2,18 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-(defproject cassandra-file-api "0.2.0-SNAPSHOT"
+(defproject cassandra-file-api "0.3.0-SNAPSHOT"
   :description "A REST interface to retrieve files from our Cassandra repository."
   :url "https://github.com/containium/cassandra-file-api"
-  :dependencies [[org.clojure/clojure "1.8.0"]
-                 [prime/utils "0.2.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure "1.9.0"]
+                 [prime/utils "0.3.0-SNAPSHOT"
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
-                 [prime/filerepository-cassandra "0.2.0-SNAPSHOT"]
-                 [ring-cors "0.1.6"]
+                 [prime/filerepository-cassandra "0.3.0-SNAPSHOT"]
+                 [ring-cors "0.1.11"]
                  [com.esotericsoftware/kryo "3.0.3"]
-                 [com.taoensso/timbre "4.3.1"]
+                 [com.taoensso/timbre "6.2.2"]
                  [commons-codec "1.8"]]
-  :profiles {:test {:dependencies [[containium/containium "0.2.0-SNAPSHOT"
+  :profiles {:test {:dependencies [[containium/containium "0.3.0-SNAPSHOT"
                                     :exclusions [leiningen-core clojure-complete boxure
                                                  com.taoensso/nippy
                                                  jline midje boxure/clojure]]
