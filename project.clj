@@ -17,7 +17,7 @@
                                     :exclusions [leiningen-core clojure-complete boxure
                                                  com.taoensso/nippy
                                                  jline midje boxure/clojure]]
-                                   [boxure "0.1.0-SNAPSHOT"]]}}
+                                   [boxure "0.2.0-SNAPSHOT"]]}}
   :plugins [[lein-libdir "0.1.1"]]
   :containium {:start cassandra-file-api.core/start
               :stop cassandra-file-api.core/stop
