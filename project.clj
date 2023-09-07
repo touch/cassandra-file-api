@@ -5,7 +5,7 @@
 (defproject cassandra-file-api "0.3.0-SNAPSHOT"
   :description "A REST interface to retrieve files from our Cassandra repository."
   :url "https://github.com/containium/cassandra-file-api"
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.3"]
                  [prime/utils "0.3.0-SNAPSHOT"
                   :exclusions [org.slf4j/slf4j-api org.slf4j/slf4j-log4j12]]
                  [prime/filerepository-cassandra "0.3.0-SNAPSHOT"]
