@@ -11,6 +11,8 @@
             [ring.util.response :refer (resource-response)]
             [prime.utils :refer (guard-let)]
             [prime.types.cassandra-repository :as cr]
+            [prime.types.s3-repository :as s3r]
+            [prime.types.s3-cassandra-repository :as s3cr]
             [ring.util.response :as response])
   (:import [java.text SimpleDateFormat]
            [java.util Calendar Locale]
@@ -34,12 +36,12 @@
 
 ;;; Cassandra related.
 
-(def cassandra-repo nil)
+(def file-repo nil)
 
 
 (defn- retrieve-data
   [^String hash]
-  (cr/fetch cassandra-repo (prime.types/FileRef ^bytes (Base64/decodeBase64 hash))))
+  (.stream file-repo (prime.types/FileRef ^bytes (Base64/decodeBase64 hash))))
 
 
 ;;; Ring related.
@@ -72,7 +74,9 @@
     (debug-response {:status 304})
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
       (if-let [stream (retrieve-data (strip-extension hash))] ; Hiercheck of gzip
-        (debug-response (with-headers request (assoc ok-response :body (ByteBufferInputStream. stream))))
+        (do
+          (error "File found, streaming it back to the client." (class stream) stream)
+          (debug-response (with-headers request (assoc ok-response :body stream))))
         (or (if-let [res (resource-response (:uri request))]
               (if (.endsWith (-> request :uri str) ".xml")
                 (assoc-in res [:headers "content-type"] "application/xml")
@@ -106,17 +110,15 @@
                  :access-control-allow-methods [:get :post :options])
       (wrap-allow-origin "*")))
 
-
-
-
-
 ;;; Containium related.
 
 (defn start
   [systems conf]
   (if-let [cassandra (:cassandra systems)]
-    (let [repo (cr/cassandra-repository cassandra :one "fs")]
-      (alter-var-root #'cassandra-repo (constantly repo))
+    (let [cassandra-repo (cr/cassandra-repository cassandra :one "fs")
+          s3-repo (s3r/s3-repository (-> systems :s3 .client) "publizr" "s3://")
+          s3-cassandra-repo (s3cr/s3-cassandra-repository s3-repo cassandra-repo)]
+      (alter-var-root #'file-repo (constantly s3-cassandra-repo))
       (info "Cassandra File API started."))
     (throw (Exception. "Missing embedded Cassandra system."))))
 
