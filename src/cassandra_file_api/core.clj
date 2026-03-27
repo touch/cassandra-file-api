@@ -14,7 +14,8 @@
             [prime.types.cassandra-repository :as cr]
             [prime.types.s3-repository :as s3r]
             [prime.types.s3-cassandra-repository :as s3cr]
-            [ring.util.response :as response])
+            [ring.util.response :as response]
+            [clj-time.core :as joda])
   (:import [java.text SimpleDateFormat]
            [java.util Calendar Locale]
            [java.nio CharBuffer]
@@ -57,6 +58,11 @@
                                                            (.add Calendar/YEAR 1))))]
     {:status 200 :headers {"Expires" expires-str}}))
 
+(defn with-time 
+  [f & options]
+  (let [start (joda/now)]
+    (f)
+    (error "serving file was done in" (- (joda/now) start) options)))
 
 (defn debug-response
   [response]
@@ -82,8 +88,9 @@
         (do
           (error "File found, streaming it back to the client.")
           (debug-response (with-headers request (assoc ok-response :body (piped-input-stream (fn [ostream]
-            (with-open [stream (retrieve-data (strip-extension hash))]
-              (io/copy stream ostream))
+            (with-time (fn []
+              (with-open [stream (retrieve-data (strip-extension hash))]
+                (io/copy stream ostream))) "hash")
             ))))))
         (or (if-let [res (resource-response (:uri request))]
               (if (.endsWith (-> request :uri str) ".xml")
