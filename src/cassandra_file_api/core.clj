@@ -9,6 +9,7 @@
             [clojure.java.io :as io]
             [ring.middleware.cors :refer (wrap-cors)]
             [ring.util.response :refer (resource-response)]
+            [ring.util.io :refer (piped-input-stream)]
             [prime.utils :refer (guard-let)]
             [prime.types.cassandra-repository :as cr]
             [prime.types.s3-repository :as s3r]
@@ -38,6 +39,10 @@
 
 (def file-repo nil)
 
+
+(defn- has-file?
+  [^String hash]
+  (.exists file-repo (prime.types/FileRef ^bytes (Base64/decodeBase64 hash))))
 
 (defn- retrieve-data
   [^String hash]
@@ -73,10 +78,13 @@
   (if (get (request :headers) "If-Modified-Since")
     (debug-response {:status 304})
     (guard-let [hash (subs (:uri request) 1) :when-not blank?]
-      (if-let [stream (retrieve-data (strip-extension hash))] ; Hiercheck of gzip
+      (if (has-file? (strip-extension hash)) ; Hiercheck of gzip
         (do
-          (error "File found, streaming it back to the client." (class stream) stream)
-          (debug-response (with-headers request (assoc ok-response :body stream))))
+          (error "File found, streaming it back to the client.")
+          (debug-response (with-headers request (assoc ok-response :body (piped-input-stream (fn [ostream]
+            (with-open [stream (retrieve-data (strip-extension hash))]
+              (spit ostream stream))
+            ))))))
         (or (if-let [res (resource-response (:uri request))]
               (if (.endsWith (-> request :uri str) ".xml")
                 (assoc-in res [:headers "content-type"] "application/xml")
