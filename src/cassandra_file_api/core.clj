@@ -83,7 +83,7 @@
           (error "File found, streaming it back to the client.")
           (debug-response (with-headers request (assoc ok-response :body (piped-input-stream (fn [ostream]
             (with-open [stream (retrieve-data (strip-extension hash))]
-              (spit ostream stream))
+              (io/copy stream ostream))
             ))))))
         (or (if-let [res (resource-response (:uri request))]
               (if (.endsWith (-> request :uri str) ".xml")
